@@ -19,24 +19,24 @@ export function Header() {
       <div className="container flex h-16 items-center justify-between px-4 md:px-6">
         <div className="flex items-center gap-8">
           <Link href="/">
-            <a className="flex items-center space-x-2" data-testid="link-home">
+            <span className="flex items-center space-x-2 cursor-pointer" data-testid="link-home">
               <span className="text-xl font-bold bg-gradient-to-r from-primary via-[#E570FF] to-[#70E5FF] bg-clip-text text-transparent">
                 Leap Tech Panel
               </span>
-            </a>
+            </span>
           </Link>
           
           <nav className="hidden md:flex items-center gap-6">
             {navLinks.map((link) => (
               <Link key={link.href} href={link.href}>
-                <a 
-                  className={`text-sm font-medium transition-colors hover:text-primary ${
+                <span 
+                  className={`text-sm font-medium transition-colors hover:text-primary cursor-pointer ${
                     location === link.href ? "text-primary" : "text-muted-foreground"
                   }`}
                   data-testid={link.testId}
                 >
                   {link.label}
-                </a>
+                </span>
               </Link>
             ))}
           </nav>
@@ -62,15 +62,15 @@ export function Header() {
           <nav className="container px-4 py-4 flex flex-col gap-3">
             {navLinks.map((link) => (
               <Link key={link.href} href={link.href}>
-                <a
-                  className={`block py-2 text-sm font-medium transition-colors hover:text-primary ${
+                <span
+                  className={`block py-2 text-sm font-medium transition-colors hover:text-primary cursor-pointer ${
                     location === link.href ? "text-primary" : "text-muted-foreground"
                   }`}
                   data-testid={`${link.testId}-mobile`}
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   {link.label}
-                </a>
+                </span>
               </Link>
             ))}
           </nav>

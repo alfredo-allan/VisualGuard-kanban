@@ -7,19 +7,19 @@ export function Footer() {
         <div className="flex flex-col md:flex-row justify-between items-center gap-4">
           <nav className="flex flex-col md:flex-row gap-3 md:gap-6 items-center">
             <Link href="/sobre">
-              <a className="text-sm text-muted-foreground hover:text-primary transition-colors" data-testid="link-sobre">
+              <span className="text-sm text-muted-foreground hover:text-primary transition-colors cursor-pointer" data-testid="link-sobre">
                 Sobre Nós
-              </a>
+              </span>
             </Link>
             <Link href="/servicos">
-              <a className="text-sm text-muted-foreground hover:text-primary transition-colors" data-testid="link-servicos">
+              <span className="text-sm text-muted-foreground hover:text-primary transition-colors cursor-pointer" data-testid="link-servicos">
                 Serviços
-              </a>
+              </span>
             </Link>
             <Link href="/contato">
-              <a className="text-sm text-muted-foreground hover:text-primary transition-colors" data-testid="link-contato">
+              <span className="text-sm text-muted-foreground hover:text-primary transition-colors cursor-pointer" data-testid="link-contato">
                 Contato
-              </a>
+              </span>
             </Link>
           </nav>
           
