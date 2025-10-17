@@ -60,14 +60,35 @@ client/src/
   3. **Em Progresso**: Tarefas em desenvolvimento
   4. **Concluído**: Tarefas finalizadas
 
+### Gerenciamento de Tarefas (CRUD Completo)
+- **Criar Tarefa**: Modal com formulário validado (título, descrição, prioridade, status)
+- **Editar Tarefa**: Atualizar detalhes de tarefas existentes
+- **Excluir Tarefa**: Remover tarefas do painel
+- **Persistência**: Dados salvos automaticamente em localStorage
+- **Sincronização**: Mudanças refletidas em múltiplas abas do navegador
+
+### Drag-and-Drop
+- Arrastar tarefas entre colunas usando @dnd-kit
+- Feedback visual durante o arrasto (opacidade reduzida)
+- Handle de drag (ícone GripVertical) para facilitar interação
+- Atualização automática do status ao soltar em nova coluna
+
+### Filtros e Busca
+- **Busca por texto**: Filtra tarefas por título ou descrição
+- **Filtro por prioridade**: Urgente, Alta, Média, Baixa ou Todas
+- **Limpar filtros**: Botão para resetar busca e filtros
+- Resultados filtrados em tempo real
+
 ### Cards de Tarefa
 - Título da tarefa
 - Descrição (opcional)
+- Handle de drag visual
 - Etiqueta de prioridade com ícones:
   - **Urgente** (vermelho, ícone AlertCircle)
   - **Alta** (roxo, ícone ArrowUp)
   - **Média** (outline, ícone Minus)
   - **Baixa** (cinza, ícone Minus)
+- Botões de editar e excluir
 
 ### Layout Responsivo (Mobile First)
 - **Mobile (<768px)**: Colunas empilhadas verticalmente
@@ -100,6 +121,17 @@ client/src/
 - **React useState**: Gerenciamento local
 - **localStorage**: Persistência de tema
 
+### Página de Relatórios
+- **KPIs em Tempo Real**:
+  - Total de tarefas cadastradas
+  - Tarefas em progresso
+  - Tarefas concluídas
+  - Taxa de conclusão percentual
+- **Gráfico de Barras**: Distribuição de tarefas por status (Backlog, A Fazer, Em Progresso, Concluído)
+- **Gráfico de Pizza**: Análise de prioridades das tarefas
+- Responsivo e adaptado ao tema dark/light
+- Todos os dados testáveis com data-testid
+
 ## Como Executar
 
 ```bash
@@ -110,13 +142,10 @@ npm run dev
 A aplicação estará disponível em `http://localhost:5000`
 
 ## Próximas Funcionalidades (Roadmap)
-- Drag-and-drop para mover tarefas entre colunas
-- Criação, edição e exclusão de tarefas
-- Filtros por prioridade
-- Busca de tarefas
-- Persistência local (localStorage)
-- Página de relatórios com métricas
-- Exportação de dados
+- Exportação de dados em CSV/JSON
+- Notificações de prazos
+- Tags personalizadas
+- Modo Kanban colaborativo
 
 ## Notas Técnicas
 - Sem integração com MongoDB ou qualquer banco de dados
