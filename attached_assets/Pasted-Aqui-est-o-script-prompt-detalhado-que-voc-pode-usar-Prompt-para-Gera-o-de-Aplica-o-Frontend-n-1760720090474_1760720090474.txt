@@ -1,0 +1,79 @@
+Aqui está o script/prompt detalhado que você pode usar:
+
+Prompt para Geração de Aplicação Frontend no Replit
+
+Objetivo: Criar um Painel de Gerenciamento de Tarefas simples (estilo Kanban/Metodologias Ágeis - "A Fazer", "Em Progresso", "Concluído", "Backlog") como uma aplicação de Frontend moderna e responsiva.
+
+Tecnologias Obrigatórias:
+
+    Framework/Biblioteca: React.js
+
+    Tooling: Vite
+
+    Estilização: Tailwind CSS (incluindo todas as suas otimizações e convenções)
+
+Identidade Visual e UX/UI:
+
+    Fonte: Utilizar a fonte Sora do Google Fonts para todo o projeto.
+
+    Tema Claro/Escuro (Dark/Light Mode): Implementar um toggle funcional para alternar entre tema claro e escuro, seguindo as melhores práticas do Tailwind CSS.
+
+    Paleta de Cores (Baseada no Anexo):
+
+        Cor Primária/Destaque: Um tom de Roxo Neon/Elétrico (ex: **#A770FF** ou similar a um roxo vibrante).
+
+        Cor de Fundo (Dark Mode): Um tom de preto profundo ou azul escuro, similar ao fundo espacial da imagem.
+
+        Cor de Fundo (Light Mode): Um branco suave ou muito claro.
+
+    Gradientes: Aplicar cores gradientes nos títulos principais e nos elementos de destaque (como o botão principal) para replicar o efeito visual "neon/buraco negro" da imagem anexa. O gradiente deve ser roxo para magenta ou roxo para ciano.
+
+Estrutura da Aplicação (Componentes e Layout):
+
+    Layout Principal:
+
+        Header (Cabeçalho): Fixo no topo.
+
+            Conteúdo: Logo (simulado como texto: "Leap Tech Panel"), um botão de alternância de tema (Dark/Light Mode) e um menu de navegação conciso.
+
+            Navegação: Lista de links objetivos (ex: "Painel", "Relatórios", "Configurações").
+
+        Main Content (Corpo Principal): Ocupando a maior parte da tela, dedicado ao Painel Kanban.
+
+        Footer (Rodapé):
+
+            Conteúdo: Links de navegação essenciais (ex: "Sobre Nós", "Serviços", "Contato") e uma seção de direitos autorais.
+
+    Painel Kanban (Foco Principal):
+
+        Estrutura de Dados: Utilizar dados simulados (um array de objetos no state do React) para representar as tarefas. Nenhuma integração com MongoDB ou qualquer banco de dados real (SQL ou NoSQL) é permitida. O foco é o visual.
+
+        Colunas: Quatro colunas principais, representando o fluxo ágil:
+
+            Backlog
+
+            A Fazer
+
+            Em Progresso (ou Doing)
+
+            Concluído (ou Done/Feito)
+
+        Cards de Tarefa: Utilizar um componente Card moderno com cantos arredondados, sombras sutis e um design limpo para cada tarefa. O Card deve exibir: Título da Tarefa, uma breve descrição (opcional) e uma etiqueta de Prioridade.
+
+Requisitos Técnicos:
+
+    Responsividade: O layout deve ser totalmente responsivo (Mobile First), ajustando-se perfeitamente de dispositivos móveis (telas pequenas) até desktops (telas grandes).
+
+        Em telas pequenas, as colunas Kanban devem se empilhar verticalmente.
+
+        Em telas médias/grandes, as colunas devem ser exibidas lado a lado.
+
+    UI Moderna: Utilizar componentes de UI modernas para Cards, botões e o Toggle de tema.
+
+    Estrutura de Código: O código deve ser modular, utilizando componentes funcionais do React e hooks (especialmente useState e useEffect para gerenciar o estado e o tema).
+
+    Tailwind Config: Garantir que o tailwind.config.js esteja corretamente configurado para incluir a fonte Sora e possivelmente os gradientes personalizados.
+
+Instrução de Entrega:
+
+Gere o código completo da aplicação (componentes, estilos Tailwind, configuração e estado simulado) em um formato que possa ser diretamente colado no Replit, garantindo que o package.json e o vite.config.js estejam corretos para um projeto React + Vite + Tailwind. O arquivo principal (ex: App.jsx ou main.jsx) deve ser o ponto de partida.
