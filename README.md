@@ -25,29 +25,29 @@ Este projeto é um frontend completo para um sistema Kanban que permite:
 ## 📦 Estrutura do Projeto
 
 src/
-├── components/ # Componentes React
-│ ├── ui/ # Componentes de UI reutilizáveis
-│ ├── kanban-board.tsx
-│ ├── kanban-column.tsx
-│ └── task-card.tsx
-├── hooks/ # Custom Hooks
-│ ├── useAuth.ts
-│ ├── useKanban.ts
-│ └── useTasks.ts
-├── api/ # Configuração da API
-│ ├── client.ts
-│ ├── auth.ts
-│ ├── tasks.ts
-│ ├── projects.ts
-│ └── columns.ts
-├── types/ # Definições de tipos TypeScript
-│ ├── api.ts
-│ └── kanban.ts
-├── pages/ # Páginas da aplicação
-│ ├── Login.tsx
-│ ├── Dashboard.tsx
-│ └── Project.tsx
-└── App.tsx # Componente principal
+## ├── components/ # Componentes React
+## │ ├── ui/ # Componentes de UI reutilizáveis
+## │ ├── kanban-board.tsx
+## │ ├── kanban-column.tsx
+## │ └── task-card.tsx
+## ├── hooks/ # Custom Hooks
+## │ ├── useAuth.ts
+## │ ├── useKanban.ts
+## │ └── useTasks.ts
+## ├── api/ # Configuração da API
+## │ ├── client.ts
+## │ ├── auth.ts
+## │ ├── tasks.ts
+## │ ├── projects.ts
+## │ └── columns.ts
+## ├── types/ # Definições de tipos TypeScript
+## │ ├── api.ts
+## │ └── kanban.ts
+## ├── pages/ # Páginas da aplicação
+## │ ├── Login.tsx
+## │ ├── Dashboard.tsx
+## │ └── Project.tsx
+## └── App.tsx # Componente principal
 
 ## 🛠️ Instalação e Configuração
 
