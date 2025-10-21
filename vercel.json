@@ -1,0 +1,23 @@
+{
+  "version": 2,
+  "name": "visualguard",
+  "builds": [
+    {
+      "src": "client/vite.config.ts",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "client/dist"
+      }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "/client/dist/index.html"
+    }
+  ],
+  "framework": "vite",
+  "env": {
+    "VITE_API_URL": "https://sua-api.aqui.com" 
+  }
+}
