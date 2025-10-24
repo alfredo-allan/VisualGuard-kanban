@@ -1,3 +1,4 @@
+// src/hooks/useKanban.tsx - VERSÃO CORRIGIDA COM IMPORTS
 import { useState, useEffect, useCallback } from 'react';
 import { boardsApi, columnsApi, tasksApi } from '@/api';
 import type {
@@ -7,7 +8,7 @@ import type {
   TaskCreate,
   TaskUpdate,
   TaskMove,
-} from '@/types';
+} from '@/types/api'; // ✅ CORRIGIDO: Import de @/types/api
 import { useToast } from './use-toast';
 
 interface UseKanbanReturn {
@@ -53,15 +54,15 @@ export function useKanban(boardId?: string): UseKanbanReturn {
       const columnsData = await columnsApi.getByBoard(id);
       setColumns(columnsData);
 
-      // Buscar todas as tarefas (poderíamos otimizar buscando por coluna)
+      // Buscar todas as tarefas
       const tasksData = await tasksApi.getAll();
-      
+
       // Filtrar apenas tasks que pertencem às colunas deste board
       const columnIds = columnsData.map((col) => col.id);
       const filteredTasks = tasksData.filter((task) =>
         columnIds.includes(task.column_id)
       );
-      
+
       setTasks(filteredTasks);
     } catch (err: any) {
       const errorMsg = err.message || 'Erro ao carregar board';
@@ -84,7 +85,7 @@ export function useKanban(boardId?: string): UseKanbanReturn {
       try {
         const newTask = await tasksApi.create(data);
         setTasks((prev) => [...prev, newTask]);
-        
+
         toast({
           title: 'Sucesso',
           description: 'Tarefa criada com sucesso!',
@@ -111,7 +112,7 @@ export function useKanban(boardId?: string): UseKanbanReturn {
         setTasks((prev) =>
           prev.map((task) => (task.id === id ? updatedTask : task))
         );
-        
+
         toast({
           title: 'Sucesso',
           description: 'Tarefa atualizada com sucesso!',
@@ -158,7 +159,7 @@ export function useKanban(boardId?: string): UseKanbanReturn {
       try {
         await tasksApi.delete(id);
         setTasks((prev) => prev.filter((task) => task.id !== id));
-        
+
         toast({
           title: 'Sucesso',
           description: 'Tarefa removida com sucesso!',

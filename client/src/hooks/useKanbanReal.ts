@@ -1,4 +1,4 @@
-// src/hooks/useKanbanReal.ts - VERSÃO COMPLETA COM DELETE
+// src/hooks/useKanbanReal.ts - VERSÃO COMPLETAMENTE REFATORADA
 import { useState, useEffect, useCallback } from "react";
 import { projectsApi, boardsApi, columnsApi, tasksApi } from "@/api";
 import type {
@@ -16,6 +16,7 @@ import {
   taskFromApi,
   columnFromApi,
   priorityMap,
+  statusToTitleMap,
   validateKanbanColumn,
   debugColumn,
   debugTask,
@@ -32,10 +33,52 @@ interface UseKanbanRealReturn {
   createProject: (data: { name: string; description?: string }) => Promise<void>;
   createTask: (task: Omit<Task, "id">) => Promise<void>;
   moveTask: (taskId: string, newStatus: ColumnStatus) => Promise<void>;
-  deleteTask: (taskId: string) => Promise<void>; // ✅ NOVA FUNÇÃO
+  deleteTask: (taskId: string) => Promise<void>;
+  deleteProject: (projectId: string) => Promise<void>; // ✅ ADICIONAR ESTA LINHA
   syncBoard: () => Promise<void>;
   refresh: () => Promise<void>;
 }
+
+// 🔹 Função auxiliar robusta para encontrar coluna por status
+const findColumnByStatus = (columns: KanbanColumn[], status: ColumnStatus): KanbanColumn | undefined => {
+  console.log(`🔍 Buscando coluna para status: "${status}"`);
+
+  // 1. Tentar match exato do status
+  const exactMatch = columns.find(col => col.status === status);
+  if (exactMatch) {
+    console.log(`✅ Encontrada por status exato: "${exactMatch.title}"`);
+    return exactMatch;
+  }
+
+  // 2. Tentar pelo título mapeado
+  const expectedTitle = statusToTitleMap[status];
+  if (expectedTitle) {
+    const titleMatch = columns.find(col => col.title === expectedTitle);
+    if (titleMatch) {
+      console.log(`✅ Encontrada por título mapeado: "${titleMatch.title}"`);
+      return titleMatch;
+    }
+  }
+
+  // 3. Tentar match parcial no título (fallback)
+  const searchTerm = status.replace('-', ' ').toLowerCase();
+  const partialMatch = columns.find(col =>
+    col.title.toLowerCase().includes(searchTerm)
+  );
+
+  if (partialMatch) {
+    console.log(`✅ Encontrada por match parcial: "${partialMatch.title}"`);
+    return partialMatch;
+  }
+
+  console.log(`❌ Nenhuma coluna encontrada para status: "${status}"`);
+  console.log('📋 Colunas disponíveis:', columns.map(c => ({
+    title: c.title,
+    status: c.status
+  })));
+
+  return undefined;
+};
 
 export function useKanbanReal(): UseKanbanRealReturn {
   const [projects, setProjects] = useState<ProjectResponse[]>([]);
@@ -47,7 +90,7 @@ export function useKanbanReal(): UseKanbanRealReturn {
 
   // 🔹 Cria colunas padrão automaticamente
   const createDefaultColumnsForBoard = async (boardId: string): Promise<void> => {
-    console.log(`📋 Criando colunas padrão para board: ${boardId}`);
+    console.group(`📋 CRIANDO COLUNAS PADRÃO: ${boardId}`);
 
     const defaultColumns = [
       { title: "Backlog", position: 0, wip_limit: null },
@@ -69,12 +112,14 @@ export function useKanbanReal(): UseKanbanRealReturn {
     } catch (error) {
       console.error("❌ Erro ao criar colunas padrão:", error);
       throw new Error("Falha ao criar colunas padrão do board");
+    } finally {
+      console.groupEnd();
     }
   };
 
   // 🔹 Carrega board com colunas e tarefas
   const loadBoard = async (boardId: string): Promise<KanbanBoard> => {
-    console.group(`🎯 LOAD BOARD: ${boardId}`);
+    console.group(`🎯 CARREGANDO BOARD: ${boardId}`);
 
     try {
       const [board, columns, allTasks] = await Promise.all([
@@ -85,6 +130,7 @@ export function useKanbanReal(): UseKanbanRealReturn {
 
       console.log(`📊 Dados carregados: ${columns.length} colunas, ${allTasks.length} tasks`);
 
+      // Processar colunas e tarefas
       const kanbanColumns: KanbanColumn[] = columns.map((column) => {
         const columnTasks = allTasks
           .filter((task) => task.column_id === column.id)
@@ -107,6 +153,14 @@ export function useKanbanReal(): UseKanbanRealReturn {
 
       const sortedColumns = kanbanColumns.sort((a, b) => a.position - b.position);
 
+      // Log estatísticas detalhadas
+      console.log("📊 Estatísticas das colunas:", sortedColumns.map(col => ({
+        title: col.title,
+        status: col.status,
+        tasks: col.tasks.length,
+        id: col.id
+      })));
+
       const boardData: KanbanBoard = {
         id: board.id,
         name: board.name,
@@ -115,20 +169,19 @@ export function useKanbanReal(): UseKanbanRealReturn {
       };
 
       console.log(`✅ Board carregado: ${sortedColumns.length} colunas válidas`);
-      console.groupEnd();
-
       return boardData;
 
     } catch (error) {
       console.error("❌ Erro ao carregar board:", error);
-      console.groupEnd();
       throw error;
+    } finally {
+      console.groupEnd();
     }
   };
 
   // 🔹 Carrega projetos
   const loadProjects = useCallback(async () => {
-    console.log("📂 Carregando projetos...");
+    console.group("📂 CARREGANDO PROJETOS");
 
     try {
       const projectsData = await projectsApi.getAll();
@@ -145,17 +198,26 @@ export function useKanbanReal(): UseKanbanRealReturn {
       console.error("❌ Erro ao carregar projetos:", err);
       setError(err.message || "Erro ao carregar projetos");
       setIsLoading(false);
+    } finally {
+      console.groupEnd();
     }
   }, [currentProject]);
 
   // 🔹 Atualiza tudo
   const refresh = useCallback(async () => {
-    console.log("🔄 Refresh completo solicitado");
+    console.group("🔄 REFRESH COMPLETO");
 
-    if (currentProject) {
-      await selectProjectInternal(currentProject.id);
-    } else {
-      await loadProjects();
+    try {
+      if (currentProject) {
+        await selectProjectInternal(currentProject.id);
+      } else {
+        await loadProjects();
+      }
+      console.log("✅ Refresh concluído");
+    } catch (error) {
+      console.error("❌ Erro no refresh:", error);
+    } finally {
+      console.groupEnd();
     }
   }, [currentProject, loadProjects]);
 
@@ -194,14 +256,16 @@ export function useKanbanReal(): UseKanbanRealReturn {
 
     } catch (error) {
       console.error("❌ Erro ao sincronizar board:", error);
+      throw error;
     } finally {
       console.groupEnd();
     }
   }, [currentProject, currentBoard]);
 
   // 🔹 Seleciona projeto e inicializa board
+  // 🔹 Seleciona projeto e inicializa board - VERSÃO CORRIGIDA
   const selectProjectInternal = async (projectId: string) => {
-    console.group(`🎯 SELECT PROJECT: ${projectId}`);
+    console.group(`🎯 SELECIONANDO PROJETO: ${projectId}`);
     setIsLoading(true);
     setError(null);
 
@@ -221,10 +285,20 @@ export function useKanbanReal(): UseKanbanRealReturn {
         });
         console.log(`✅ Board criado: ${activeBoard.id}`);
 
+        // ✅ GARANTIR que as colunas são criadas
         await createDefaultColumnsForBoard(activeBoard.id);
       } else {
         activeBoard = boards[0];
         console.log(`✅ Board existente encontrado: ${activeBoard.name}`);
+
+        // ✅ VERIFICAR se o board tem colunas
+        const existingColumns = await columnsApi.getByBoard(activeBoard.id);
+        console.log(`📊 Colunas existentes: ${existingColumns.length}`);
+
+        if (existingColumns.length === 0) {
+          console.log("⚠️ Board sem colunas! Criando colunas padrão...");
+          await createDefaultColumnsForBoard(activeBoard.id);
+        }
       }
 
       const boardData = await loadBoard(activeBoard.id);
@@ -251,6 +325,8 @@ export function useKanbanReal(): UseKanbanRealReturn {
   // 🔹 Cria novo projeto
   const createProject = useCallback(
     async (data: { name: string; description?: string }) => {
+      console.group("🏗️ CRIANDO NOVO PROJETO");
+
       try {
         const newProject = await projectsApi.create(data);
         setProjects((prev) => [...prev, newProject]);
@@ -260,57 +336,94 @@ export function useKanbanReal(): UseKanbanRealReturn {
           title: "Sucesso",
           description: "Projeto criado com sucesso!",
         });
+        console.log("✅ Projeto criado com sucesso");
       } catch (err: any) {
+        console.error("❌ Erro ao criar projeto:", err);
         toast({
           title: "Erro",
           description: err.message || "Erro ao criar projeto",
           variant: "destructive",
         });
+        throw err;
+      } finally {
+        console.groupEnd();
       }
     },
     [toast]
   );
 
-  // 🔹 Cria nova tarefa
+  // 🔹 Cria nova tarefa - VERSÃO CORRIGIDA
   const createTask = useCallback(
     async (task: Omit<Task, "id">) => {
-      console.log("➕ Criando nova tarefa:", task.title);
+      console.group("➕ CRIANDO NOVA TAREFA");
+      console.log("📝 Dados da tarefa:", task);
 
-      if (!currentBoard) throw new Error("Nenhum board selecionado");
+      if (!currentBoard) {
+        console.error("❌ Nenhum board selecionado");
+        throw new Error("Nenhum board selecionado");
+      }
 
-      const column = currentBoard.columns.find(
-        (col) => col.status === task.status
-      );
+      console.log("🏗️ Colunas disponíveis:", currentBoard.columns.map(c => ({
+        title: c.title,
+        status: c.status,
+        id: c.id
+      })));
+
+      // ✅ USAR FUNÇÃO ROBUSTA PARA ENCONTRAR COLUNA
+      const column = findColumnByStatus(currentBoard.columns, task.status);
 
       if (!column) {
-        throw new Error(`Coluna com status "${task.status}" não encontrada`);
+        const availableColumns = currentBoard.columns.map(c => `"${c.title}" (${c.status})`).join(', ');
+        console.error("❌ COLUNA NÃO ENCONTRADA - Detalhes:", {
+          statusProcurado: task.status,
+          colunasDisponiveis: availableColumns
+        });
+        throw new Error(`Coluna para status "${task.status}" não encontrada. Colunas disponíveis: ${availableColumns}`);
       }
+
+      console.log("🎯 Coluna encontrada:", {
+        title: column.title,
+        status: column.status,
+        id: column.id
+      });
 
       const apiTask: ApiTaskCreate = {
         title: task.title,
         description: task.description || null,
         priority: priorityMap[task.priority],
-        column_id: column.id,
+        column_id: column.id, // ✅ Usar ID real da coluna
         assignee_id: task.assignee_id || null,
         due_date: task.due_date || null,
       };
 
-      await tasksApi.create(apiTask);
+      console.log("📤 Payload para API:", apiTask);
 
-      await syncBoard();
+      try {
+        await tasksApi.create(apiTask);
+        console.log("✅ Tarefa criada na API");
 
-      toast({
-        title: "Sucesso",
-        description: "Tarefa criada com sucesso!",
-      });
+        await syncBoard();
+        console.log("✅ Board sincronizado");
+
+        toast({
+          title: "Sucesso",
+          description: "Tarefa criada com sucesso!",
+        });
+
+      } catch (error) {
+        console.error("❌ Erro ao criar tarefa:", error);
+        throw error;
+      } finally {
+        console.groupEnd();
+      }
     },
     [currentBoard, toast, syncBoard]
   );
 
-  // 🔹 Mover tarefa entre colunas
+  // 🔹 Mover tarefa entre colunas - VERSÃO CORRIGIDA
   const moveTask = useCallback(
     async (taskId: string, newStatus: ColumnStatus) => {
-      console.group(`🚀 MOVER TAREFA: ${taskId} -> ${newStatus}`);
+      console.group(`🚀 MOVENDO TAREFA: ${taskId} -> ${newStatus}`);
 
       if (!currentBoard) {
         console.error("❌ Nenhum board selecionado");
@@ -328,9 +441,8 @@ export function useKanbanReal(): UseKanbanRealReturn {
 
       debugTask(currentTask, "Tarefa atual");
 
-      const targetColumn = currentBoard.columns.find(
-        (col) => col.status === newStatus
-      );
+      // ✅ USAR FUNÇÃO ROBUSTA PARA ENCONTRAR COLUNA
+      const targetColumn = findColumnByStatus(currentBoard.columns, newStatus);
 
       if (!targetColumn) {
         console.error("❌ Coluna de destino não encontrada para status:", newStatus);
@@ -407,7 +519,7 @@ export function useKanbanReal(): UseKanbanRealReturn {
     [currentBoard, toast, syncBoard, refresh]
   );
 
-  // 🔹 Deletar tarefa - NOVA FUNÇÃO
+  // 🔹 Deletar tarefa
   const deleteTask = useCallback(async (taskId: string) => {
     console.group(`🗑️ DELETANDO TAREFA: ${taskId}`);
 
@@ -490,6 +602,47 @@ export function useKanbanReal(): UseKanbanRealReturn {
 
   // ==================== RETORNO DO HOOK ====================
 
+  // 🔹 Adicionar esta função DENTRO do hook useKanbanReal, antes do return final:
+
+  const deleteProject = useCallback(async (projectId: string) => {
+    console.group(`🗑️ EXCLUINDO PROJETO: ${projectId}`);
+
+    try {
+      // Primeiro verificar se temos a API de projetos com delete
+      await projectsApi.delete(projectId);
+
+      // Atualizar lista de projetos localmente
+      setProjects(prev => prev.filter(project => project.id !== projectId));
+
+      // Se o projeto atual foi excluído, limpar estado
+      if (currentProject?.id === projectId) {
+        setCurrentProject(null);
+        setCurrentBoard(null);
+      }
+
+      console.log("✅ Projeto excluído com sucesso");
+
+      toast({
+        title: "Sucesso",
+        description: "Projeto excluído com sucesso!",
+      });
+
+    } catch (err: any) {
+      console.error("❌ Erro ao excluir projeto:", err);
+
+      toast({
+        title: "Erro",
+        description: err.message || "Erro ao excluir projeto",
+        variant: "destructive",
+      });
+
+      throw err;
+    } finally {
+      console.groupEnd();
+    }
+  }, [currentProject, toast]); // ✅ Agora tem acesso a todas as dependências
+
+  // 🔹 E adicionar ao return final do hook:
   return {
     projects,
     currentProject,
@@ -500,8 +653,9 @@ export function useKanbanReal(): UseKanbanRealReturn {
     createProject,
     createTask,
     moveTask,
-    deleteTask, // ✅ ADICIONAR AO RETORNO
+    deleteTask,
+    deleteProject, // ✅ ADICIONAR AQUI
     syncBoard,
     refresh,
-  };
-}
+  }
+};

@@ -1,4 +1,4 @@
-// src/types/kanban.ts - VERSÃO 100% REFATORADA
+// src/types/kanban.ts - VERSÃO CORRIGIDA COM CASE CORRETO
 import type {
   TaskResponse,
   ColumnResponse,
@@ -9,37 +9,34 @@ import type {
 
 // ==================== TIPOS DO FRONTEND (UI) ====================
 
-// Mantém compatibilidade com código existente do frontend
 export type Priority = 'baixa' | 'media' | 'alta' | 'urgente';
 export type ColumnStatus = 'backlog' | 'a-fazer' | 'em-progresso' | 'concluido';
 
-// Task do Frontend (UI) - Compatível com componentes existentes
+// Task do Frontend (UI)
 export interface Task {
   id: string;
   title: string;
   description?: string;
   priority: Priority;
-  status: ColumnStatus; // Mantém para compatibilidade
+  status: ColumnStatus;
   assignee_id?: string;
   due_date?: string;
   created_at?: string;
   updated_at?: string;
-
-  // Campos para integração com API
-  column_id?: string; // UUID da coluna no backend
+  column_id?: string;
   position?: number;
   created_by?: string;
 }
 
-// Coluna do Kanban (UI) - REFATORADA COM TODAS AS PROPRIEDADES NECESSÁRIAS
+// Coluna do Kanban (UI)
 export interface KanbanColumn {
-  id: string; // UUID da coluna no backend
+  id: string; // ✅ UUID real da API
   title: string;
-  status: ColumnStatus; // ✅ PROPRIEDADE CRÍTICA ADICIONADA
+  status: ColumnStatus;
   tasks: Task[];
   position: number;
   wip_limit?: number | null;
-  board_id: string; // ✅ TORNANDO OBRIGATÓRIO
+  board_id: string;
   created_at?: string;
   updated_at?: string;
 }
@@ -62,36 +59,36 @@ export interface Project {
   updated_at?: string;
 }
 
-// ==================== MAPEAMENTOS APRIMORADOS ====================
+// ==================== MAPEAMENTOS ====================
 
-// Mapeamento de prioridades (Frontend <-> Backend)
+// ✅ CORRIGIDO: Usar lowercase conforme a API
 export const priorityMap: Record<Priority, TaskPriority> = {
   baixa: 'low',
   media: 'medium',
   alta: 'high',
-  urgente: 'high', // Mapeia 'urgente' para 'high' no backend
+  urgente: 'high',
 };
 
 export const priorityMapReverse: Record<TaskPriority, Priority> = {
   low: 'baixa',
   medium: 'media',
-  high: 'alta', // 'urgente' não tem reverso direto, usa 'alta'
+  high: 'alta',
 };
 
-// Mapeamento de status de coluna (Título -> Status Frontend) - APRIMORADO
+// Mapeamento de status de coluna (Título -> Status Frontend)
 export const columnStatusMap: Record<string, ColumnStatus> = {
   'Backlog': 'backlog',
   'A Fazer': 'a-fazer',
   'Em Progresso': 'em-progresso',
   'Concluído': 'concluido',
-  'Concluido': 'concluido', // Fallback para possível variação
-  'backlog': 'backlog', // Fallback direto
+  'Concluido': 'concluido',
+  'backlog': 'backlog',
   'a-fazer': 'a-fazer',
   'em-progresso': 'em-progresso',
   'concluido': 'concluido',
 };
 
-// Mapeamento reverso (Status Frontend -> Título esperado) - APRIMORADO
+// Mapeamento reverso (Status Frontend -> Título)
 export const statusToTitleMap: Record<ColumnStatus, string> = {
   'backlog': 'Backlog',
   'a-fazer': 'A Fazer',
@@ -99,34 +96,23 @@ export const statusToTitleMap: Record<ColumnStatus, string> = {
   'concluido': 'Concluído'
 };
 
-// Mapeamento reverso (Status Frontend -> ID de coluna esperado) - NOVO
-export const statusToColumnIdMap: Record<ColumnStatus, string> = {
-  'backlog': 'backlog-column',
-  'a-fazer': 'todo-column',
-  'em-progresso': 'progress-column',
-  'concluido': 'done-column'
-};
-
-// ==================== FUNÇÕES DE CONVERSÃO APRIMORADAS ====================
+// ==================== FUNÇÕES DE CONVERSÃO ====================
 
 /**
  * Converter Task da API para Task do Frontend
- * AGORA COM DETECÇÃO AUTOMÁTICA DE STATUS BASEADA NA COLUNA
  */
 export const taskFromApi = (apiTask: TaskResponse, columnTitle: string): Task => {
-  // Detectar status baseado no título da coluna
   const status = columnStatusMap[columnTitle] || 'backlog';
 
-  // Log para debugging (remover em produção)
-  if (!columnStatusMap[columnTitle]) {
-    console.warn(`❌ Título de coluna não mapeado: "${columnTitle}". Usando "backlog" como fallback.`);
-  }
+  // Normalizar prioridade (garantir lowercase)
+  const normalizedPriority = (apiTask.priority || 'medium').toLowerCase() as TaskPriority;
+  const priority = priorityMapReverse[normalizedPriority] || 'media';
 
   return {
     id: apiTask.id,
     title: apiTask.title,
     description: apiTask.description || undefined,
-    priority: priorityMapReverse[apiTask.priority] || 'media',
+    priority,
     status,
     assignee_id: apiTask.assignee_id || undefined,
     due_date: apiTask.due_date || undefined,
@@ -140,10 +126,8 @@ export const taskFromApi = (apiTask: TaskResponse, columnTitle: string): Task =>
 
 /**
  * Converter Task do Frontend para API
- * AGORA COM VALIDAÇÃO DE PRIORIDADE
  */
 export const taskToApi = (task: Task, columnId: string): Omit<TaskResponse, 'id' | 'created_at' | 'updated_at'> => {
-  // Validar e mapear prioridade
   const apiPriority = priorityMap[task.priority] || 'medium';
 
   return {
@@ -154,31 +138,29 @@ export const taskToApi = (task: Task, columnId: string): Omit<TaskResponse, 'id'
     position: task.position || 0,
     column_id: columnId,
     assignee_id: task.assignee_id || null,
-    created_by: task.created_by || '', // Será preenchido pelo backend
+    created_by: task.created_by || '',
   };
 };
 
 /**
  * Converter Coluna da API para Coluna do Frontend
- * AGORA COM DETECÇÃO AUTOMÁTICA DE STATUS
+ * ✅ SEMPRE USA ID REAL DA API
  */
 export const columnFromApi = (
   apiColumn: ColumnResponse,
   tasks: Task[] = [],
-  status?: ColumnStatus // Opcional - será detectado automaticamente se não fornecido
+  status?: ColumnStatus
 ): KanbanColumn => {
-  // Detectar status baseado no título da coluna se não fornecido
   const detectedStatus = status || columnStatusMap[apiColumn.title] || 'backlog';
 
-  // Log para debugging (remover em produção)
   if (!status && !columnStatusMap[apiColumn.title]) {
-    console.warn(`❌ Não foi possível detectar status para coluna: "${apiColumn.title}". Usando "backlog".`);
+    console.warn(`⚠️ Status não detectado para coluna: "${apiColumn.title}". Usando "backlog".`);
   }
 
   return {
-    id: apiColumn.id,
+    id: apiColumn.id, // ✅ USA ID REAL DA API (UUID)
     title: apiColumn.title,
-    status: detectedStatus, // ✅ SEMPRE PREENCHIDO
+    status: detectedStatus,
     tasks: tasks,
     position: apiColumn.position,
     wip_limit: apiColumn.wip_limit || null,
@@ -187,35 +169,6 @@ export const columnFromApi = (
     updated_at: apiColumn.updated_at,
   };
 };
-
-/**
- * Criar coluna padrão para uso no frontend
- * Útil para estados iniciais e demonstração
- */
-export const createDefaultColumn = (
-  title: string,
-  status: ColumnStatus,
-  position: number,
-  boardId: string = 'default-board'
-): KanbanColumn => ({
-  id: statusToColumnIdMap[status] || `column-${status}`,
-  title,
-  status,
-  tasks: [],
-  position,
-  wip_limit: null,
-  board_id: boardId,
-});
-
-/**
- * Gerar colunas padrão para um novo board
- */
-export const createDefaultColumns = (boardId: string): KanbanColumn[] => [
-  createDefaultColumn('Backlog', 'backlog', 0, boardId),
-  createDefaultColumn('A Fazer', 'a-fazer', 1, boardId),
-  createDefaultColumn('Em Progresso', 'em-progresso', 2, boardId),
-  createDefaultColumn('Concluído', 'concluido', 3, boardId),
-];
 
 // ==================== TIPOS PARA FORMS ====================
 
@@ -233,17 +186,19 @@ export interface ProjectFormData {
 
 // ==================== UTILITÁRIOS PARA DEBUG ====================
 
-/**
- * Validar se uma coluna tem todas as propriedades necessárias
- */
 export const validateKanbanColumn = (column: any): column is KanbanColumn => {
   const required = ['id', 'title', 'status', 'tasks', 'position', 'board_id'];
-  return required.every(prop => prop in column);
+  const isValid = required.every(prop => prop in column);
+
+  if (!isValid) {
+    console.warn('❌ Coluna inválida - faltam propriedades:',
+      required.filter(prop => !(prop in column))
+    );
+  }
+
+  return isValid;
 };
 
-/**
- * Log detalhado para debugging de colunas
- */
 export const debugColumn = (column: KanbanColumn, context: string = '') => {
   console.group(`🔍 DEBUG COLUMN ${context}`);
   console.log('ID:', column.id);
@@ -256,9 +211,6 @@ export const debugColumn = (column: KanbanColumn, context: string = '') => {
   console.groupEnd();
 };
 
-/**
- * Log detalhado para debugging de tasks
- */
 export const debugTask = (task: Task, context: string = '') => {
   console.group(`🔍 DEBUG TASK ${context}`);
   console.log('ID:', task.id);

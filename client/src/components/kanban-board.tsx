@@ -1,4 +1,4 @@
-// src/components/kanban-board.tsx - VERSÃO CORRIGIDA
+// src/components/kanban-board.tsx - VERSÃO CORRIGIDA SEM MOCKS
 import {
   DndContext,
   DragEndEvent,
@@ -15,7 +15,6 @@ import {
   type KanbanColumn as KanbanColumnType,
   type Task,
   type ColumnStatus,
-  createDefaultColumn,
   debugColumn,
   debugTask,
 } from "@/types/kanban";
@@ -25,6 +24,7 @@ import { Info } from "lucide-react";
 // 🔹 INTERFACE DE PROPS ATUALIZADA
 interface KanbanBoardProps {
   tasks: Task[];
+  columns?: KanbanColumnType[]; // ✅ ADICIONAR: Receber colunas reais da API
   onEditTask?: (task: Task) => void;
   onDeleteTask?: (taskId: string) => void;
   onMoveTask?: (taskId: string, newStatus: ColumnStatus) => void;
@@ -34,6 +34,7 @@ interface KanbanBoardProps {
 
 export function KanbanBoard({
   tasks,
+  columns, // ✅ Receber colunas da API
   onEditTask,
   onDeleteTask,
   onMoveTask,
@@ -51,7 +52,7 @@ export function KanbanBoard({
     })
   );
 
-  // 🔹 HANDLER DE INÍCIO DE DRAG - CORRIGIDO
+  // 🔹 HANDLER DE INÍCIO DE DRAG
   const handleDragStart = (event: DragStartEvent) => {
     console.group("🔄 DRAG START");
 
@@ -76,17 +77,15 @@ export function KanbanBoard({
     console.groupEnd();
   };
 
-  // 🔹 HANDLER DE FIM DE DRAG - CORRIGIDO
+  // 🔹 HANDLER DE FIM DE DRAG
   const handleDragEnd = (event: DragEndEvent) => {
     console.group("🎯 DRAG END");
 
-    // Reset do estado visual independente do resultado
     const cleanup = () => {
       setActiveTask(null);
       console.log("🧹 Estado de drag resetado");
     };
 
-    // Verificar se está em modo leitura ou sem handler de movimento
     if (isReadOnly || !onMoveTask) {
       console.log(isReadOnly ? "⏸️  Modo leitura" : "❌ Nenhum onMoveTask handler");
       cleanup();
@@ -96,7 +95,6 @@ export function KanbanBoard({
 
     const { active, over } = event;
 
-    // Verificar se soltou em uma área válida
     if (!over) {
       console.log("❌ Soltou em área inválida");
       cleanup();
@@ -109,7 +107,6 @@ export function KanbanBoard({
 
     console.log(`📤 Movendo tarefa ${taskId} para status: ${newStatus}`);
 
-    // Encontrar a tarefa atual
     const task = tasks.find((t) => t.id === taskId);
     if (!task) {
       console.error(`❌ Tarefa não encontrada: ${taskId}`);
@@ -118,7 +115,6 @@ export function KanbanBoard({
       return;
     }
 
-    // Verificar se realmente mudou de status
     if (task.status === newStatus) {
       console.log("✅ Mesmo status - nenhuma ação necessária");
       cleanup();
@@ -128,7 +124,6 @@ export function KanbanBoard({
 
     console.log(`🔄 Movendo de "${task.status}" para "${newStatus}"`);
 
-    // Executar a movimentação
     try {
       onMoveTask(taskId, newStatus);
       console.log("✅ Movimentação iniciada com sucesso");
@@ -140,28 +135,67 @@ export function KanbanBoard({
     }
   };
 
-  // 🔹 COLUNAS DO KANBAN - CORRIGIDO
-  const columns: KanbanColumnType[] = [
-    createDefaultColumn('Backlog', 'backlog', 0, 'kanban-board'),
-    createDefaultColumn('A Fazer', 'a-fazer', 1, 'kanban-board'),
-    createDefaultColumn('Em Progresso', 'em-progresso', 2, 'kanban-board'),
-    createDefaultColumn('Concluído', 'concluido', 3, 'kanban-board'),
-  ].map(defaultColumn => {
-    // Preencher cada coluna com suas tasks
-    const columnTasks = tasks.filter(task => task.status === defaultColumn.status);
+  // 🔹 COLUNAS DO KANBAN - CORRIGIDO PARA USAR DADOS REAIS DA API
+  const displayColumns: KanbanColumnType[] = columns || [
+    // ✅ Fallback apenas para modo demo (quando não há colunas da API)
+    {
+      id: 'demo-backlog',
+      title: 'Backlog',
+      status: 'backlog',
+      tasks: [],
+      position: 0,
+      board_id: 'demo-board',
+      wip_limit: null,
+    },
+    {
+      id: 'demo-todo',
+      title: 'A Fazer',
+      status: 'a-fazer',
+      tasks: [],
+      position: 1,
+      board_id: 'demo-board',
+      wip_limit: 5,
+    },
+    {
+      id: 'demo-progress',
+      title: 'Em Progresso',
+      status: 'em-progresso',
+      tasks: [],
+      position: 2,
+      board_id: 'demo-board',
+      wip_limit: 3,
+    },
+    {
+      id: 'demo-done',
+      title: 'Concluído',
+      status: 'concluido',
+      tasks: [],
+      position: 3,
+      board_id: 'demo-board',
+      wip_limit: null,
+    },
+  ];
+
+  // ✅ Preencher colunas com tasks (suporta tanto colunas da API quanto fallback)
+  const populatedColumns = displayColumns.map(column => {
+    // Se a coluna já tem tasks (vem da API), usa elas
+    // Senão, filtra as tasks pelo status
+    const columnTasks = column.tasks.length > 0
+      ? column.tasks
+      : tasks.filter(task => task.status === column.status);
 
     const populatedColumn: KanbanColumnType = {
-      ...defaultColumn,
+      ...column,
       tasks: columnTasks,
     };
 
     // Debug para validação
-    debugColumn(populatedColumn, `Coluna: ${defaultColumn.title}`);
+    debugColumn(populatedColumn, `Coluna: ${column.title}`);
 
     return populatedColumn;
   });
 
-  // 🔹 RENDER DO DRAG OVERLAY - CORRIGIDO (PROBLEMA PRINCIPAL)
+  // 🔹 RENDER DO DRAG OVERLAY
   const renderDragOverlay = () => {
     if (!activeTask) return null;
 
@@ -169,17 +203,18 @@ export function KanbanBoard({
       <div className="opacity-90 rotate-3 cursor-grabbing transform-gpu transition-transform">
         <TaskCard
           task={activeTask}
-          isReadOnly={true} // ✅ CORRIGIDO: usar isReadOnly em vez de onEditTask/onDeleteTask undefined
+          isReadOnly={true}
         />
       </div>
     );
   };
 
-  // 🔹 ESTATÍSTICAS PARA DEBUG (opcional)
-  const columnStats = columns.map(col => ({
+  // 🔹 ESTATÍSTICAS PARA DEBUG
+  const columnStats = populatedColumns.map(col => ({
     title: col.title,
     tasks: col.tasks.length,
-    status: col.status
+    status: col.status,
+    id: col.id
   }));
 
   console.log("📊 Estatísticas das colunas:", columnStats);
@@ -205,7 +240,7 @@ export function KanbanBoard({
       >
         {/* 🔹 GRID DE COLUNAS */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
-          {columns.map((column) => (
+          {populatedColumns.map((column) => (
             <KanbanColumn
               key={column.id}
               column={column}
@@ -218,7 +253,7 @@ export function KanbanBoard({
           ))}
         </div>
 
-        {/* 🔹 OVERLAY DE DRAG (elemento que segue o cursor) */}
+        {/* 🔹 OVERLAY DE DRAG */}
         <DragOverlay
           zIndex={999}
           dropAnimation={null}
@@ -244,7 +279,7 @@ export function KanbanBoardPlaceholder({ message = "Carregando..." }: { message?
   return (
     <div className="w-full space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {['Backlog', 'A Fazer', 'Em Progresso', 'Concluído'].map((title, index) => (
+        {['Backlog', 'A Fazer', 'Em Progresso', 'Concluído'].map((title) => (
           <div key={title} className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
             <h3 className="font-semibold text-gray-600 mb-2">{title}</h3>
             <p className="text-sm text-gray-500">{message}</p>
@@ -274,7 +309,6 @@ export function KanbanBoardError({ error, onRetry }: { error: string; onRetry?: 
         </AlertDescription>
       </Alert>
 
-      {/* Mostrar colunas vazias em caso de erro */}
       <KanbanBoardPlaceholder message="Erro ao carregar dados" />
     </div>
   );

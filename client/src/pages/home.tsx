@@ -1,4 +1,4 @@
-// src/pages/Home.tsx - VERSÃO COMPLETA COM DELETE
+// src/pages/Home.tsx - VERSÃO COMPLETAMENTE REFATORADA
 import { KanbanBoard } from "@/components/kanban-board";
 import { TaskDialog } from "@/components/task-dialog";
 import { TaskFilters } from "@/components/task-filters";
@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 export default function Home() {
+  // ==================== STATE ====================
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -36,12 +37,13 @@ export default function Home() {
   const [movingTaskId, setMovingTaskId] = useState<string | null>(null);
   const [deleteTaskId, setDeleteTaskId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isCreatingProject, setIsCreatingProject] = useState(false); // ✅ NOVO ESTADO
 
+  // ==================== HOOKS ====================
   const { isAuthenticated, user } = useAuth();
   const [, navigate] = useLocation();
   const { toast } = useToast();
 
-  // Hook do Kanban
   const {
     projects,
     currentProject,
@@ -52,125 +54,33 @@ export default function Home() {
     createProject,
     createTask,
     moveTask,
-    deleteTask, // ✅ NOVA FUNÇÃO
-    refresh,
+    deleteTask,
     syncBoard,
   } = useKanbanReal();
 
-  // Tasks do board atual
+  // ==================== MEMOIZED VALUES ====================
   const tasks = useMemo(() => {
     return currentBoard?.columns?.flatMap((column) => column.tasks || []) || [];
   }, [currentBoard]);
 
-  // Tasks filtradas
   const filteredTasks = useMemo(() => {
     const safeTasks = Array.isArray(tasks) ? tasks : [];
 
-    const filtered = safeTasks.filter((task) => {
+    return safeTasks.filter((task) => {
       if (!task || typeof task !== 'object') return false;
 
       const matchesSearch =
         searchQuery === "" ||
-        (task.title && task.title.toLowerCase().includes(searchQuery.toLowerCase())) ||
-        (task.description && task.description.toLowerCase().includes(searchQuery.toLowerCase()));
+        (task.title?.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (task.description?.toLowerCase().includes(searchQuery.toLowerCase()));
 
       const matchesPriority = priorityFilter === "all" || task.priority === priorityFilter;
 
       return matchesSearch && matchesPriority;
     });
-
-    return filtered;
   }, [tasks, searchQuery, priorityFilter]);
 
-  // 🔹 HANDLER DE EXCLUSÃO DE TAREFAS
-  const handleDeleteTask = useCallback(async (taskId: string) => {
-    console.group(`🗑️ HOME: Solicitada exclusão da tarefa: ${taskId}`);
-
-    if (!isAuthenticated) {
-      navigate("/login");
-      return;
-    }
-
-    // Encontrar a tarefa para mostrar no diálogo de confirmação
-    const taskToDelete = tasks.find(t => t.id === taskId);
-    if (!taskToDelete) {
-      console.error("❌ Tarefa não encontrada para exclusão:", taskId);
-      toast({
-        title: "Erro",
-        description: "Tarefa não encontrada.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Abrir diálogo de confirmação
-    setDeleteTaskId(taskId);
-    console.log("📋 Diálogo de confirmação aberto");
-    console.groupEnd();
-  }, [isAuthenticated, tasks, toast, navigate]);
-
-  // 🔹 CONFIRMAR EXCLUSÃO
-  const confirmDeleteTask = useCallback(async () => {
-    if (!deleteTaskId) return;
-
-    console.group(`✅ HOME: Confirmando exclusão da tarefa: ${deleteTaskId}`);
-    setIsDeleting(true);
-
-    try {
-      await deleteTask(deleteTaskId);
-      console.log("✅ Exclusão confirmada e executada");
-
-    } catch (error) {
-      console.error("❌ Erro na exclusão:", error);
-    } finally {
-      setDeleteTaskId(null);
-      setIsDeleting(false);
-      console.groupEnd();
-    }
-  }, [deleteTaskId, deleteTask]);
-
-  // 🔹 CANCELAR EXCLUSÃO
-  const cancelDeleteTask = useCallback(() => {
-    console.log("❌ HOME: Exclusão cancelada pelo usuário");
-    setDeleteTaskId(null);
-  }, []);
-
-  // 🔹 HANDLER DE MOVIMENTO DE TAREFAS
-  const handleMoveTask = useCallback(async (taskId: string, newStatus: ColumnStatus) => {
-    if (!isAuthenticated) {
-      navigate("/login");
-      return;
-    }
-
-    if (movingTaskId) return;
-
-    setMovingTaskId(taskId);
-
-    try {
-      await moveTask(taskId, newStatus);
-      toast({
-        title: "Tarefa movida!",
-        description: `Tarefa movida para ${newStatus.replace('-', ' ')}`,
-        variant: "default",
-      });
-    } catch (error) {
-      toast({
-        title: "Erro ao mover tarefa",
-        description: "Não foi possível mover a tarefa. Tente novamente.",
-        variant: "destructive",
-      });
-      await syncBoard();
-    } finally {
-      setMovingTaskId(null);
-    }
-  }, [isAuthenticated, movingTaskId, moveTask, syncBoard, toast, navigate]);
-
-  // 🔹 HANDLERS GERAIS
-  const handleClearFilters = useCallback(() => {
-    setSearchQuery("");
-    setPriorityFilter("all");
-  }, []);
-
+  // ==================== TASK HANDLERS ====================
   const handleAddTask = useCallback(() => {
     if (!isAuthenticated) {
       navigate("/login");
@@ -232,15 +142,102 @@ export default function Home() {
     }
   }, [isAuthenticated, createTask, syncBoard, toast, navigate]);
 
-  const handleCreateProject = useCallback(async (projectData: { name: string; description?: string }) => {
-    try {
-      await createProject(projectData);
+  const handleDeleteTask = useCallback(async (taskId: string) => {
+    console.group(`🗑️ HOME: Solicitada exclusão da tarefa: ${taskId}`);
+
+    if (!isAuthenticated) {
+      navigate("/login");
+      return;
+    }
+
+    const taskToDelete = tasks.find(t => t.id === taskId);
+    if (!taskToDelete) {
+      console.error("❌ Tarefa não encontrada para exclusão:", taskId);
       toast({
-        title: "Projeto criado!",
-        description: "Seu projeto foi criado com sucesso.",
+        title: "Erro",
+        description: "Tarefa não encontrada.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setDeleteTaskId(taskId);
+    console.log("📋 Diálogo de confirmação aberto");
+    console.groupEnd();
+  }, [isAuthenticated, tasks, toast, navigate]);
+
+  const confirmDeleteTask = useCallback(async () => {
+    if (!deleteTaskId) return;
+
+    console.group(`✅ HOME: Confirmando exclusão da tarefa: ${deleteTaskId}`);
+    setIsDeleting(true);
+
+    try {
+      await deleteTask(deleteTaskId);
+      console.log("✅ Exclusão confirmada e executada");
+    } catch (error) {
+      console.error("❌ Erro na exclusão:", error);
+    } finally {
+      setDeleteTaskId(null);
+      setIsDeleting(false);
+      console.groupEnd();
+    }
+  }, [deleteTaskId, deleteTask]);
+
+  const cancelDeleteTask = useCallback(() => {
+    console.log("❌ HOME: Exclusão cancelada pelo usuário");
+    setDeleteTaskId(null);
+  }, []);
+
+  const handleMoveTask = useCallback(async (taskId: string, newStatus: ColumnStatus) => {
+    if (!isAuthenticated) {
+      navigate("/login");
+      return;
+    }
+
+    if (movingTaskId) return;
+
+    setMovingTaskId(taskId);
+
+    try {
+      await moveTask(taskId, newStatus);
+      toast({
+        title: "Tarefa movida!",
+        description: `Tarefa movida para ${newStatus.replace('-', ' ')}`,
         variant: "default",
       });
-      setIsProjectDialogOpen(false);
+    } catch (error) {
+      toast({
+        title: "Erro ao mover tarefa",
+        description: "Não foi possível mover a tarefa. Tente novamente.",
+        variant: "destructive",
+      });
+      await syncBoard();
+    } finally {
+      setMovingTaskId(null);
+    }
+  }, [isAuthenticated, movingTaskId, moveTask, syncBoard, toast, navigate]);
+
+  // ==================== PROJECT HANDLERS ====================
+  const handleCreateProject = useCallback(async (projectData: { name: string; description?: string }) => {
+    setIsCreatingProject(true); // ✅ Inicia loading
+
+    try {
+      await createProject(projectData);
+
+      // ✅ SOLUÇÃO: Recarregar a página após criar o projeto
+      setTimeout(() => {
+        window.location.reload();
+      }, 800); // Pequeno delay para o usuário ver o toast
+
+      toast({
+        title: "Projeto criado!",
+        description: "Recarregando para carregar seu novo projeto...",
+        variant: "default",
+      });
+
+      // ❌ REMOVER: setIsProjectDialogOpen(false) - a recarga já fecha
+
     } catch (error) {
       console.error("❌ Erro ao criar projeto:", error);
       toast({
@@ -248,6 +245,9 @@ export default function Home() {
         description: "Não foi possível criar o projeto.",
         variant: "destructive",
       });
+      setIsProjectDialogOpen(false); // ✅ Só fecha em caso de erro
+    } finally {
+      setIsCreatingProject(false); // ✅ Finaliza loading
     }
   }, [createProject, toast]);
 
@@ -259,7 +259,13 @@ export default function Home() {
     await selectProject(projectId);
   }, [selectProject]);
 
-  // 🔹 DEBUG STATE
+  // ==================== FILTER HANDLERS ====================
+  const handleClearFilters = useCallback(() => {
+    setSearchQuery("");
+    setPriorityFilter("all");
+  }, []);
+
+  // ==================== DEBUG ====================
   useEffect(() => {
     if (isAuthenticated) {
       console.group("🏠 HOME STATE UPDATE");
@@ -269,11 +275,12 @@ export default function Home() {
       console.log("🔄 Loading:", isLoading);
       console.log("❌ Error:", error);
       console.log("🚀 Moving task:", movingTaskId);
+      console.log("🏗️ Creating project:", isCreatingProject);
       console.groupEnd();
     }
-  }, [projects, currentProject, currentBoard, isLoading, error, movingTaskId, isAuthenticated]);
+  }, [projects, currentProject, currentBoard, isLoading, error, movingTaskId, isCreatingProject, isAuthenticated]);
 
-  // 🔹 RENDER HEADER PARA USUÁRIOS AUTENTICADOS
+  // ==================== RENDER FUNCTIONS ====================
   const renderAuthenticatedHeader = () => (
     <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
       <div className="space-y-2 flex-1">
@@ -333,7 +340,7 @@ export default function Home() {
         <Button
           onClick={handleAddTask}
           className="gap-2"
-          disabled={!currentProject || !!movingTaskId}
+          disabled={!currentProject || !!movingTaskId || isCreatingProject}
         >
           <Plus className="h-4 w-4" />
           Nova Tarefa
@@ -342,7 +349,6 @@ export default function Home() {
     </div>
   );
 
-  // 🔹 RENDER KANBAN STATS
   const renderKanbanStats = () => {
     const safeTasks = Array.isArray(tasks) ? tasks : [];
 
@@ -357,7 +363,7 @@ export default function Home() {
         {stats.map(({ status, label }) => {
           const count = safeTasks.filter((t) => t.status === status).length;
           return (
-            <Card key={status} className={cn("transition-all", movingTaskId && "opacity-80")}>
+            <Card key={status} className={cn("transition-all", (movingTaskId || isCreatingProject) && "opacity-80")}>
               <CardContent className="pt-6">
                 <div className={cn(
                   "text-2xl font-bold transition-colors",
@@ -370,7 +376,7 @@ export default function Home() {
             </Card>
           );
         })}
-        <Card className={cn(movingTaskId && "opacity-80")}>
+        <Card className={cn((movingTaskId || isCreatingProject) && "opacity-80")}>
           <CardContent className="pt-6">
             <div className="text-2xl font-bold text-foreground">{safeTasks.length}</div>
             <p className="text-sm text-muted-foreground">Total</p>
@@ -380,7 +386,6 @@ export default function Home() {
     );
   };
 
-  // 🔹 RENDER KANBAN CONTENT
   const renderKanbanContent = () => (
     <>
       {renderKanbanStats()}
@@ -402,8 +407,18 @@ export default function Home() {
         </Alert>
       )}
 
+      {isCreatingProject && (
+        <Alert className="bg-blue-50 border-blue-200 dark:bg-blue-950 dark:border-blue-800">
+          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
+          <AlertDescription className="text-blue-800 dark:text-blue-300">
+            Criando projeto... Aguarde a conclusão.
+          </AlertDescription>
+        </Alert>
+      )}
+
       <KanbanBoard
         tasks={filteredTasks}
+        columns={currentBoard?.columns}
         onEditTask={handleEditTask}
         onDeleteTask={handleDeleteTask}
         onMoveTask={handleMoveTask}
@@ -412,7 +427,6 @@ export default function Home() {
     </>
   );
 
-  // 🔹 RENDER DIALOG DE CONFIRMAÇÃO DE EXCLUSÃO
   const renderDeleteConfirmationDialog = () => {
     const taskToDelete = deleteTaskId ? tasks.find(t => t.id === deleteTaskId) : null;
 
@@ -451,10 +465,7 @@ export default function Home() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel
-              onClick={cancelDeleteTask}
-              disabled={isDeleting}
-            >
+            <AlertDialogCancel onClick={cancelDeleteTask} disabled={isDeleting}>
               Cancelar
             </AlertDialogCancel>
             <AlertDialogAction
@@ -480,7 +491,6 @@ export default function Home() {
     );
   };
 
-  // 🔹 RENDER NO PROJECT STATE
   const renderNoProjectState = () => {
     if (projects.length === 0) {
       return (
@@ -491,8 +501,18 @@ export default function Home() {
             <p className="text-muted-foreground mb-6">
               Crie seu primeiro projeto para começar a usar o Kanban
             </p>
-            <Button onClick={() => setIsProjectDialogOpen(true)}>
-              Criar Primeiro Projeto
+            <Button
+              onClick={() => setIsProjectDialogOpen(true)}
+              disabled={isCreatingProject}
+            >
+              {isCreatingProject ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Criando...
+                </>
+              ) : (
+                "Criar Primeiro Projeto"
+              )}
             </Button>
           </CardContent>
         </Card>
@@ -508,11 +528,25 @@ export default function Home() {
             Selecione um projeto existente ou crie um novo para começar
           </p>
           <div className="flex gap-3 justify-center">
-            <Button onClick={() => selectProject(projects[0].id)}>
+            <Button
+              onClick={() => selectProject(projects[0].id)}
+              disabled={isCreatingProject}
+            >
               Selecionar Projeto
             </Button>
-            <Button variant="outline" onClick={() => setIsProjectDialogOpen(true)}>
-              Criar Novo Projeto
+            <Button
+              variant="outline"
+              onClick={() => setIsProjectDialogOpen(true)}
+              disabled={isCreatingProject}
+            >
+              {isCreatingProject ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary mr-2"></div>
+                  Criando...
+                </>
+              ) : (
+                "Criar Novo Projeto"
+              )}
             </Button>
           </div>
         </CardContent>
@@ -520,7 +554,6 @@ export default function Home() {
     );
   };
 
-  // 🔹 RENDER UNAUTHENTICATED STATE (VISUALIZAÇÃO PÚBLICA)
   const renderUnauthenticatedState = () => (
     <div className="flex-1 w-full">
       <div className="container px-4 md:px-6 py-8 space-y-8">
@@ -590,6 +623,7 @@ export default function Home() {
 
             <KanbanBoard
               tasks={[]}
+              columns={undefined}
               onEditTask={() => navigate("/login")}
               onDeleteTask={() => navigate("/login")}
               onMoveTask={() => navigate("/login")}
@@ -601,7 +635,7 @@ export default function Home() {
     </div>
   );
 
-  // 🔹 RENDER LOADING STATE
+  // ==================== CONDITIONAL RENDERS ====================
   if (isAuthenticated && isLoading) {
     return (
       <div className="flex-1 w-full flex items-center justify-center">
@@ -613,7 +647,6 @@ export default function Home() {
     );
   }
 
-  // 🔹 RENDER ERROR STATE
   if (isAuthenticated && error) {
     return (
       <div className="flex-1 w-full flex items-center justify-center">
@@ -628,12 +661,11 @@ export default function Home() {
     );
   }
 
-  // 🔹 RENDER UNAUTHENTICATED (VISUALIZAÇÃO PÚBLICA)
   if (!isAuthenticated) {
     return renderUnauthenticatedState();
   }
 
-  // 🔹 RENDER MAIN CONTENT (USUÁRIOS AUTENTICADOS)
+  // ==================== MAIN RENDER ====================
   return (
     <div className="flex-1 w-full">
       <div className="container px-4 md:px-6 py-8 space-y-8">
@@ -641,7 +673,6 @@ export default function Home() {
 
         {!currentProject ? renderNoProjectState() : renderKanbanContent()}
 
-        {/* Modais */}
         <TaskDialog
           open={isTaskModalOpen}
           onOpenChange={setIsTaskModalOpen}
@@ -653,9 +684,9 @@ export default function Home() {
           open={isProjectDialogOpen}
           onOpenChange={setIsProjectDialogOpen}
           onSave={handleCreateProject}
+        /*  isLoading={isCreatingProject} */ // ✅ PASSA O LOADING
         />
 
-        {/* ✅ DIALOG DE CONFIRMAÇÃO DE EXCLUSÃO */}
         {renderDeleteConfirmationDialog()}
       </div>
     </div>
