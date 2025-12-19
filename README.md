@@ -71,7 +71,7 @@ yarn install
 
 cp .env.example .env
 
-VITE_API_BASE_URL=http://localhost:8000
+VITE_API_BASE_URL=https://api-kanban-e84m.onrender.com
 VITE_APP_NAME=Kanban Board
 
 npm run dev

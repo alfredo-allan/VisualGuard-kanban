@@ -53,7 +53,11 @@ export function DashboardPage() {
               </span>
             </p>
           </div>
-          <Button onClick={handleLogout} variant="outline" className="mt-4 md:mt-0">
+          <Button
+            onClick={handleLogout}
+            variant="outline"
+            className="mt-4 md:mt-0"
+          >
             Sair
           </Button>
         </div>

@@ -4,13 +4,13 @@ import type {
   ColumnResponse,
   ProjectResponse,
   BoardResponse,
-  TaskPriority
-} from '@/types/api';
+  TaskPriority,
+} from "@/types/api";
 
 // ==================== TIPOS DO FRONTEND (UI) ====================
 
-export type Priority = 'baixa' | 'media' | 'alta' | 'urgente';
-export type ColumnStatus = 'backlog' | 'a-fazer' | 'em-progresso' | 'concluido';
+export type Priority = "baixa" | "media" | "alta" | "urgente";
+export type ColumnStatus = "backlog" | "a-fazer" | "em-progresso" | "concluido";
 
 // Task do Frontend (UI)
 export interface Task {
@@ -26,6 +26,7 @@ export interface Task {
   column_id?: string;
   position?: number;
   created_by?: string;
+  assigned_to?: string;
 }
 
 // Coluna do Kanban (UI)
@@ -63,37 +64,37 @@ export interface Project {
 
 // ✅ CORRIGIDO: Usar lowercase conforme a API
 export const priorityMap: Record<Priority, TaskPriority> = {
-  baixa: 'low',
-  media: 'medium',
-  alta: 'high',
-  urgente: 'high',
+  baixa: "low",
+  media: "medium",
+  alta: "high",
+  urgente: "high",
 };
 
 export const priorityMapReverse: Record<TaskPriority, Priority> = {
-  low: 'baixa',
-  medium: 'media',
-  high: 'alta',
+  low: "baixa",
+  medium: "media",
+  high: "alta",
 };
 
 // Mapeamento de status de coluna (Título -> Status Frontend)
 export const columnStatusMap: Record<string, ColumnStatus> = {
-  'Backlog': 'backlog',
-  'A Fazer': 'a-fazer',
-  'Em Progresso': 'em-progresso',
-  'Concluído': 'concluido',
-  'Concluido': 'concluido',
-  'backlog': 'backlog',
-  'a-fazer': 'a-fazer',
-  'em-progresso': 'em-progresso',
-  'concluido': 'concluido',
+  Backlog: "backlog",
+  "A Fazer": "a-fazer",
+  "Em Progresso": "em-progresso",
+  Concluído: "concluido",
+  Concluido: "concluido",
+  backlog: "backlog",
+  "a-fazer": "a-fazer",
+  "em-progresso": "em-progresso",
+  concluido: "concluido",
 };
 
 // Mapeamento reverso (Status Frontend -> Título)
 export const statusToTitleMap: Record<ColumnStatus, string> = {
-  'backlog': 'Backlog',
-  'a-fazer': 'A Fazer',
-  'em-progresso': 'Em Progresso',
-  'concluido': 'Concluído'
+  backlog: "Backlog",
+  "a-fazer": "A Fazer",
+  "em-progresso": "Em Progresso",
+  concluido: "Concluído",
 };
 
 // ==================== FUNÇÕES DE CONVERSÃO ====================
@@ -101,12 +102,17 @@ export const statusToTitleMap: Record<ColumnStatus, string> = {
 /**
  * Converter Task da API para Task do Frontend
  */
-export const taskFromApi = (apiTask: TaskResponse, columnTitle: string): Task => {
-  const status = columnStatusMap[columnTitle] || 'backlog';
+export const taskFromApi = (
+  apiTask: TaskResponse,
+  columnTitle: string
+): Task => {
+  const status = columnStatusMap[columnTitle] || "backlog";
 
   // Normalizar prioridade (garantir lowercase)
-  const normalizedPriority = (apiTask.priority || 'medium').toLowerCase() as TaskPriority;
-  const priority = priorityMapReverse[normalizedPriority] || 'media';
+  const normalizedPriority = (
+    apiTask.priority || "medium"
+  ).toLowerCase() as TaskPriority;
+  const priority = priorityMapReverse[normalizedPriority] || "media";
 
   return {
     id: apiTask.id,
@@ -127,8 +133,11 @@ export const taskFromApi = (apiTask: TaskResponse, columnTitle: string): Task =>
 /**
  * Converter Task do Frontend para API
  */
-export const taskToApi = (task: Task, columnId: string): Omit<TaskResponse, 'id' | 'created_at' | 'updated_at'> => {
-  const apiPriority = priorityMap[task.priority] || 'medium';
+export const taskToApi = (
+  task: Task,
+  columnId: string
+): Omit<TaskResponse, "id" | "created_at" | "updated_at"> => {
+  const apiPriority = priorityMap[task.priority] || "medium";
 
   return {
     title: task.title,
@@ -138,7 +147,7 @@ export const taskToApi = (task: Task, columnId: string): Omit<TaskResponse, 'id'
     position: task.position || 0,
     column_id: columnId,
     assignee_id: task.assignee_id || null,
-    created_by: task.created_by || '',
+    created_by: task.created_by || "",
   };
 };
 
@@ -151,10 +160,13 @@ export const columnFromApi = (
   tasks: Task[] = [],
   status?: ColumnStatus
 ): KanbanColumn => {
-  const detectedStatus = status || columnStatusMap[apiColumn.title] || 'backlog';
+  const detectedStatus =
+    status || columnStatusMap[apiColumn.title] || "backlog";
 
   if (!status && !columnStatusMap[apiColumn.title]) {
-    console.warn(`⚠️ Status não detectado para coluna: "${apiColumn.title}". Usando "backlog".`);
+    console.warn(
+      `⚠️ Status não detectado para coluna: "${apiColumn.title}". Usando "backlog".`
+    );
   }
 
   return {
@@ -187,37 +199,38 @@ export interface ProjectFormData {
 // ==================== UTILITÁRIOS PARA DEBUG ====================
 
 export const validateKanbanColumn = (column: any): column is KanbanColumn => {
-  const required = ['id', 'title', 'status', 'tasks', 'position', 'board_id'];
-  const isValid = required.every(prop => prop in column);
+  const required = ["id", "title", "status", "tasks", "position", "board_id"];
+  const isValid = required.every((prop) => prop in column);
 
   if (!isValid) {
-    console.warn('❌ Coluna inválida - faltam propriedades:',
-      required.filter(prop => !(prop in column))
+    console.warn(
+      "❌ Coluna inválida - faltam propriedades:",
+      required.filter((prop) => !(prop in column))
     );
   }
 
   return isValid;
 };
 
-export const debugColumn = (column: KanbanColumn, context: string = '') => {
+export const debugColumn = (column: KanbanColumn, context: string = "") => {
   console.group(`🔍 DEBUG COLUMN ${context}`);
-  console.log('ID:', column.id);
-  console.log('Title:', column.title);
-  console.log('Status:', column.status);
-  console.log('Position:', column.position);
-  console.log('Board ID:', column.board_id);
-  console.log('Tasks:', column.tasks.length);
-  console.log('WIP Limit:', column.wip_limit);
+  console.log("ID:", column.id);
+  console.log("Title:", column.title);
+  console.log("Status:", column.status);
+  console.log("Position:", column.position);
+  console.log("Board ID:", column.board_id);
+  console.log("Tasks:", column.tasks.length);
+  console.log("WIP Limit:", column.wip_limit);
   console.groupEnd();
 };
 
-export const debugTask = (task: Task, context: string = '') => {
+export const debugTask = (task: Task, context: string = "") => {
   console.group(`🔍 DEBUG TASK ${context}`);
-  console.log('ID:', task.id);
-  console.log('Title:', task.title);
-  console.log('Status:', task.status);
-  console.log('Priority:', task.priority);
-  console.log('Column ID:', task.column_id);
-  console.log('Position:', task.position);
+  console.log("ID:", task.id);
+  console.log("Title:", task.title);
+  console.log("Status:", task.status);
+  console.log("Priority:", task.priority);
+  console.log("Column ID:", task.column_id);
+  console.log("Position:", task.position);
   console.groupEnd();
 };

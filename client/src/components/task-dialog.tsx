@@ -31,7 +31,10 @@ import { type Task, type Priority, type ColumnStatus } from "@/types/kanban";
 import { useEffect } from "react";
 
 const taskSchema = z.object({
-  title: z.string().min(1, "Título é obrigatório").max(100, "Título muito longo"),
+  title: z
+    .string()
+    .min(1, "Título é obrigatório")
+    .max(100, "Título muito longo"),
   description: z.string().max(500, "Descrição muito longa").optional(),
   priority: z.enum(["baixa", "media", "alta", "urgente"]),
   status: z.enum(["backlog", "a-fazer", "em-progresso", "concluido"]),
@@ -46,7 +49,12 @@ interface TaskDialogProps {
   onSave: (task: Omit<Task, "id"> & { id?: string }) => void;
 }
 
-export function TaskDialog({ open, onOpenChange, task, onSave }: TaskDialogProps) {
+export function TaskDialog({
+  open,
+  onOpenChange,
+  task,
+  onSave,
+}: TaskDialogProps) {
   const form = useForm<TaskFormData>({
     resolver: zodResolver(taskSchema),
     defaultValues: {
@@ -90,10 +98,12 @@ export function TaskDialog({ open, onOpenChange, task, onSave }: TaskDialogProps
         <DialogHeader>
           <DialogTitle>{task ? "Editar Tarefa" : "Nova Tarefa"}</DialogTitle>
           <DialogDescription>
-            {task ? "Atualize os detalhes da tarefa" : "Preencha os detalhes da nova tarefa"}
+            {task
+              ? "Atualize os detalhes da tarefa"
+              : "Preencha os detalhes da nova tarefa"}
           </DialogDescription>
         </DialogHeader>
-        
+
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
@@ -103,9 +113,9 @@ export function TaskDialog({ open, onOpenChange, task, onSave }: TaskDialogProps
                 <FormItem>
                   <FormLabel>Título*</FormLabel>
                   <FormControl>
-                    <Input 
-                      placeholder="Digite o título da tarefa" 
-                      {...field} 
+                    <Input
+                      placeholder="Digite o título da tarefa"
+                      {...field}
                       data-testid="input-task-title"
                     />
                   </FormControl>
@@ -121,10 +131,10 @@ export function TaskDialog({ open, onOpenChange, task, onSave }: TaskDialogProps
                 <FormItem>
                   <FormLabel>Descrição</FormLabel>
                   <FormControl>
-                    <Textarea 
-                      placeholder="Digite uma descrição (opcional)" 
+                    <Textarea
+                      placeholder="Digite uma descrição (opcional)"
                       className="resize-none min-h-[100px]"
-                      {...field} 
+                      {...field}
                       data-testid="input-task-description"
                     />
                   </FormControl>
@@ -140,8 +150,8 @@ export function TaskDialog({ open, onOpenChange, task, onSave }: TaskDialogProps
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Prioridade*</FormLabel>
-                    <Select 
-                      onValueChange={field.onChange} 
+                    <Select
+                      onValueChange={field.onChange}
                       defaultValue={field.value}
                       value={field.value}
                     >
@@ -151,10 +161,30 @@ export function TaskDialog({ open, onOpenChange, task, onSave }: TaskDialogProps
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="baixa" data-testid="option-priority-baixa">Baixa</SelectItem>
-                        <SelectItem value="media" data-testid="option-priority-media">Média</SelectItem>
-                        <SelectItem value="alta" data-testid="option-priority-alta">Alta</SelectItem>
-                        <SelectItem value="urgente" data-testid="option-priority-urgente">Urgente</SelectItem>
+                        <SelectItem
+                          value="baixa"
+                          data-testid="option-priority-baixa"
+                        >
+                          Baixa
+                        </SelectItem>
+                        <SelectItem
+                          value="media"
+                          data-testid="option-priority-media"
+                        >
+                          Média
+                        </SelectItem>
+                        <SelectItem
+                          value="alta"
+                          data-testid="option-priority-alta"
+                        >
+                          Alta
+                        </SelectItem>
+                        <SelectItem
+                          value="urgente"
+                          data-testid="option-priority-urgente"
+                        >
+                          Urgente
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -168,8 +198,8 @@ export function TaskDialog({ open, onOpenChange, task, onSave }: TaskDialogProps
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Status*</FormLabel>
-                    <Select 
-                      onValueChange={field.onChange} 
+                    <Select
+                      onValueChange={field.onChange}
                       defaultValue={field.value}
                       value={field.value}
                     >
@@ -179,10 +209,30 @@ export function TaskDialog({ open, onOpenChange, task, onSave }: TaskDialogProps
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="backlog" data-testid="option-status-backlog">Backlog</SelectItem>
-                        <SelectItem value="a-fazer" data-testid="option-status-a-fazer">A Fazer</SelectItem>
-                        <SelectItem value="em-progresso" data-testid="option-status-em-progresso">Em Progresso</SelectItem>
-                        <SelectItem value="concluido" data-testid="option-status-concluido">Concluído</SelectItem>
+                        <SelectItem
+                          value="backlog"
+                          data-testid="option-status-backlog"
+                        >
+                          Backlog
+                        </SelectItem>
+                        <SelectItem
+                          value="a-fazer"
+                          data-testid="option-status-a-fazer"
+                        >
+                          A Fazer
+                        </SelectItem>
+                        <SelectItem
+                          value="em-progresso"
+                          data-testid="option-status-em-progresso"
+                        >
+                          Em Progresso
+                        </SelectItem>
+                        <SelectItem
+                          value="concluido"
+                          data-testid="option-status-concluido"
+                        >
+                          Concluído
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -192,18 +242,15 @@ export function TaskDialog({ open, onOpenChange, task, onSave }: TaskDialogProps
             </div>
 
             <DialogFooter>
-              <Button 
-                type="button" 
-                variant="outline" 
+              <Button
+                type="button"
+                variant="outline"
                 onClick={() => onOpenChange(false)}
                 data-testid="button-cancel-task"
               >
                 Cancelar
               </Button>
-              <Button 
-                type="submit"
-                data-testid="button-save-task"
-              >
+              <Button type="submit" data-testid="button-save-task">
                 {task ? "Salvar Alterações" : "Criar Tarefa"}
               </Button>
             </DialogFooter>

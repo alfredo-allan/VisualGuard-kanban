@@ -6,6 +6,7 @@ import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { AuthModal } from "@/components/auth/AuthModal";
+import LogoLeap from "../../public/assets/logo-leap.png";
 
 export function Header() {
   const [location] = useLocation();
@@ -16,7 +17,11 @@ export function Header() {
   const navLinks = [
     { href: "/", label: "Painel", testId: "link-painel" },
     { href: "/relatorios", label: "Relatórios", testId: "link-relatorios" },
-    { href: "/configuracoes", label: "Configurações", testId: "link-configuracoes" },
+    {
+      href: "/configuracoes",
+      label: "Configurações",
+      testId: "link-configuracoes",
+    },
   ];
 
   // Links adicionais para usuários autenticados
@@ -44,7 +49,7 @@ export function Header() {
               data-testid="link-home"
             >
               <img
-                src="../../public/assets/logo-leap.png"
+                src={LogoLeap}
                 alt="Logo"
                 width={30}
                 height={30}
@@ -61,10 +66,11 @@ export function Header() {
             {allNavLinks.map((link) => (
               <Link key={link.href} href={link.href}>
                 <span
-                  className={`text-sm font-medium transition-colors hover:text-primary cursor-pointer ${location === link.href
-                    ? "text-primary"
-                    : "text-muted-foreground"
-                    }`}
+                  className={`text-sm font-medium transition-colors hover:text-primary cursor-pointer ${
+                    location === link.href
+                      ? "text-primary"
+                      : "text-muted-foreground"
+                  }`}
                   data-testid={link.testId}
                 >
                   {link.label}
@@ -79,13 +85,16 @@ export function Header() {
           {isAuthenticated ? (
             <div className="hidden md:flex items-center gap-4">
               <span className="text-sm text-muted-foreground">
-                Olá, <span className="font-medium text-foreground">{user?.username}</span>
+                Olá,{" "}
+                <span className="font-medium text-foreground">
+                  {user?.username}
+                </span>
               </span>
               <Button
                 onClick={handleLogout}
                 variant="outline"
                 size="sm"
-                data-testid="button-logout"
+                data-testid="button-logout border-none"
               >
                 Sair
               </Button>
@@ -97,7 +106,7 @@ export function Header() {
                 onClick={() => setIsAuthModalOpen(true)}
                 variant="outline"
                 size="sm"
-                data-testid="button-login"
+                data-testid="button-login border-none"
               >
                 Entrar
               </Button>
@@ -105,6 +114,7 @@ export function Header() {
                 onClick={() => setIsAuthModalOpen(true)}
                 size="sm"
                 data-testid="button-register"
+                className="border-none"
               >
                 Cadastrar
               </Button>
@@ -137,10 +147,11 @@ export function Header() {
             {allNavLinks.map((link) => (
               <Link key={link.href} href={link.href}>
                 <span
-                  className={`block py-2 text-sm font-medium transition-colors hover:text-primary cursor-pointer ${location === link.href
-                    ? "text-primary"
-                    : "text-muted-foreground"
-                    }`}
+                  className={`block py-2 text-sm font-medium transition-colors hover:text-primary cursor-pointer ${
+                    location === link.href
+                      ? "text-primary"
+                      : "text-muted-foreground"
+                  }`}
                   data-testid={`${link.testId}-mobile`}
                   onClick={() => setMobileMenuOpen(false)}
                 >

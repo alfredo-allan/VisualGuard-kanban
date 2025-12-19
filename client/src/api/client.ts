@@ -1,6 +1,6 @@
 import type { ApiError } from '@/types/api';
 // Configuração base da API
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://api-kanban-e84m.onrender.com';
 
 /**
  * Classe de erro customizada para a API

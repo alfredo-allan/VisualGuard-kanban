@@ -1,0 +1,11 @@
+
+> rest-express@1.0.0 dev /home/kali-sonic/Documentos/Projetos/VisualGuard-kanban
+> vite
+
+
+  VITE v5.4.20  ready in 339 ms
+
+  ➜  Local:   http://localhost:5173/
+  ➜  Network: use --host to expose
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+ ELIFECYCLE  Command failed.
