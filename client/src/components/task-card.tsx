@@ -109,7 +109,7 @@ export function TaskCard({
       {/* ✅ INDICADOR DE FILTRO (quando a tarefa corresponde) */}
       {isFilteredMatch && (
         <div className="absolute top-2 right-2 z-10">
-          <div className="h-2 w-2 bg-emerald-500 rounded-full animate-pulse"></div>
+          <div className="h-2 w-2 rounded-full animate-pulse bg-gradient-to-tr from-purple-500 to-cyan-500 shadow-[0_0_8px_rgba(168,85,247,0.5)]"></div>{" "}
         </div>
       )}
 
